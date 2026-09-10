@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgis/postgis:15-3.3 # Imagen oficial con PostgreSQL + PostGIS listo
+    container_name: nfhunter_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: nfhunter_user
+      POSTGRES_PASSWORD: nfhunter_password
+      POSTGRES_DB: nfhunter_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
