@@ -6,7 +6,6 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { EventsModule } from './events/events.module';
-import { ScansModule } from './scans/scans.module';
 
 @Module({
   imports: [
@@ -14,7 +13,6 @@ import { ScansModule } from './scans/scans.module';
     AuthModule,
     UsersModule,
     EventsModule,
-    ScansModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
