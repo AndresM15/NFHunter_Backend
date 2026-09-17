@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -8,25 +8,47 @@ export class EventsService {
   constructor(private readonly prisma: PrismaService) {}
 
   create(createEventDto: CreateEventDto) {
-    return this.prisma.event.create({ data: createEventDto });
+    const { startDate, endDate, ...eventData } = createEventDto;
+
+    return this.prisma.event.create({
+      data: {
+        ...eventData,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+      },
+    });
   }
 
   findAll() {
     return this.prisma.event.findMany();
   }
 
-  findOne(id: number) {
-    return this.prisma.event.findUnique({ where: { id } });
+  async findOne(id: number) {
+    const event = await this.prisma.event.findUnique({ where: { id } });
+
+    if (!event) {
+      throw new NotFoundException(`Evento con ID ${id} no encontrado.`);
+    }
+
+    return event;
   }
 
-  update(id: number, updateEventDto: UpdateEventDto) {
+  async update(id: number, updateEventDto: UpdateEventDto) {
+    await this.findOne(id);
+    const { startDate, endDate, ...eventData } = updateEventDto;
+
     return this.prisma.event.update({
       where: { id },
-      data: updateEventDto,
+      data: {
+        ...eventData,
+        ...(startDate !== undefined && { startDate: new Date(startDate) }),
+        ...(endDate !== undefined && { endDate: new Date(endDate) }),
+      },
     });
   }
 
-  remove(id: number) {
+  async remove(id: number) {
+    await this.findOne(id);
     return this.prisma.event.delete({ where: { id } });
   }
 }

@@ -90,10 +90,12 @@ export class UsersService {
   async remove(id: string) {
     // Verificar que existe antes de intentar borrar
     await this.findOne(id);
-    
-    return this.prisma.user.delete({
+
+    const deletedUser = await this.prisma.user.delete({
       where: { id },
     });
+
+    return this.sanitizeUser(deletedUser);
   }
 
   // Método auxiliar privado para limpiar el hash de la contraseña de las respuestas

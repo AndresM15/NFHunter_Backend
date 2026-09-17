@@ -21,7 +21,7 @@ export class CreateUserDto {
   @ApiPropertyOptional({ enum: ['USER', 'ADMIN'], default: 'USER' })
   @IsOptional()
   @IsIn(['USER', 'ADMIN'])
-  role?: 'USER' | 'ADMIN';
+  role: 'USER' | 'ADMIN' = 'USER';
 
   @ApiPropertyOptional({ example: 'Novato' })
   @IsString()

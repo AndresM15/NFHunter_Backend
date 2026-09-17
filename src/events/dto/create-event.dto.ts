@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsDateString, IsNotEmpty, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsDateString, IsNotEmpty, MaxLength, IsBoolean } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateEventDto {
@@ -11,7 +11,7 @@ export class CreateEventDto {
   @ApiPropertyOptional({ example: 'Primer evento de recolección de tags en el campus.' })
   @IsString()
   @IsOptional()
-  description?: string;
+  description?: string | null;
 
   @ApiProperty({ example: '2026-10-01T08:00:00Z' })
   @IsDateString()
@@ -22,4 +22,9 @@ export class CreateEventDto {
   @IsDateString()
   @IsNotEmpty()
   endDate!: string;
+
+  @ApiPropertyOptional({ default: true })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 }
