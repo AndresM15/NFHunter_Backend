@@ -1,9 +1,11 @@
 import { PrismaClient } from '@prisma/client'; // <-- Quita la importación de 'Role'
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Iniciando la siembra de datos de prueba (Seed)...');
+  console.log('Iniciando la siembra de datos de prueba (Seed)...');
+  
 
   // 1. Limpiar datos existentes
   await prisma.scansHistory.deleteMany();
@@ -22,12 +24,15 @@ async function main() {
     },
   });
 
+
+  const hashedPassword = await bcrypt.hash('admin123', 10);
+
   // 3. Crear Usuarios de prueba usando strings directamente
   const adminUser = await prisma.user.create({
     data: {
       nickname: 'admin_manizales',
       email: 'admin@nfhunter.com',
-      passwordHash: 'scrypt_hashed_password_placeholder',
+      passwordHash: hashedPassword,
       role: 'ADMIN', // <-- Pasar string directo
       levelTitle: 'Administrador del Juego',
     },
@@ -90,7 +95,7 @@ async function main() {
     );
   `;
 
-  console.log('✅ Datos de prueba insertados con éxito.');
+  console.log('seed ejecutada correctamente');
 }
 
 main()
