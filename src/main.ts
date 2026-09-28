@@ -1,10 +1,12 @@
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { snapshot: false });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { snapshot: false });
 
   // Configuración de la documentación Swagger
   const config = new DocumentBuilder()
@@ -21,6 +23,9 @@ async function bootstrap() {
     whitelist: true, // Elimina campos adicionales que no estén en el DTO
     forbidNonWhitelisted: true, // Lanza error si envían campos no permitidos
   }));
+
+  // Fotos de perfil subidas por los usuarios (ver UsersService.updateAvatar)
+  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
 
   app.enableCors();
   await app.listen(process.env.PORT ?? 3000);
