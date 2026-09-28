@@ -12,6 +12,10 @@ import { CreateScanDto } from './dto/create-scan.dto';
 // para poder aflojarlo en pruebas de campo sin recompilar.
 const RADIO_ESCANEO_METROS = Number(process.env.SCAN_RADIUS_METERS ?? 50);
 
+// Los mensajes de error los muestra la app tal cual: fechas legibles, no ISO.
+const fechaLegible = (fecha: Date) =>
+  fecha.toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' });
+
 export interface EscaneoRegistrado {
   id: string;
   pointsEarned: number;
@@ -48,7 +52,7 @@ export class ScansService {
 
     if (previo) {
       throw new ConflictException(
-        `Ya habías escaneado "${tag.name}" el ${previo.scannedAt.toISOString()}.`,
+        `Ya habías escaneado "${tag.name}" el ${fechaLegible(previo.scannedAt)}`,
       );
     }
 
@@ -207,7 +211,7 @@ export class ScansService {
     const ahora = new Date();
     if (ahora < evento.startDate || ahora > evento.endDate) {
       throw new BadRequestException(
-        `El evento "${evento.name}" está fuera de fechas (${evento.startDate.toISOString()} a ${evento.endDate.toISOString()}).`,
+        `El evento "${evento.name}" está fuera de fechas: va del ${fechaLegible(evento.startDate)} al ${fechaLegible(evento.endDate)}`,
       );
     }
   }
