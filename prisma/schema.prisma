@@ -74,5 +74,8 @@ model ScansHistory {
   user User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   tag  NfcTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
+  // Un tag da puntos una sola vez por jugador. La validacion en el service
+  // responde 409, pero el indice evita que dos escaneos simultaneos pasen.
+  @@unique([userId, tagId])
   @@map("scans_history")
 }
