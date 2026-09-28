@@ -6,6 +6,7 @@ import { UsersModule } from './users/users.module';
 import { EventsModule } from './events/events.module';
 import { NfcTagsModule } from './nfc-tags/nfc-tags.module';
 import { ScansModule } from './scans/scans.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ScansModule } from './scans/scans.module';
     EventsModule,
     NfcTagsModule,
     ScansModule,
+    ChatModule,
   ],
 
   providers: [PrismaService],
