@@ -11,7 +11,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     PassportModule.register({ defaultStrategy: 'jwt' }), 
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'nfhunter_super_secret_key_2026',
-      signOptions: { expiresIn: '7d' },
+      // Se renueva en cada apertura de la app (POST /auth/refresh)
+      signOptions: { expiresIn: '30d' },
     }),
   ],
   controllers: [AuthController],

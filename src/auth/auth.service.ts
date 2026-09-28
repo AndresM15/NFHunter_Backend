@@ -57,6 +57,12 @@ export class AuthService {
     return this.generateToken(user.id, user.email, user.role);
   }
 
+  // El usuario llega ya validado por JwtStrategy contra la base: si un admin
+  // le cambió el rol, el token nuevo sale con el rol actual.
+  refresh(usuario: { id: string; email: string; role: string }) {
+    return this.generateToken(usuario.id, usuario.email, usuario.role);
+  }
+
   private generateToken(userId: string, email: string, role: string) {
     const payload = { sub: userId, email, role };
     return {
