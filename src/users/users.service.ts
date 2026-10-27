@@ -1,8 +1,24 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { mkdir, unlink, writeFile } from 'fs/promises';
+import { join } from 'path';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+
+// Carpeta servida en /uploads (ver main.ts). En la base se guarda la ruta
+// relativa, así la URL no depende de la IP en la que corra el servidor.
+export const CARPETA_AVATARES = join(process.cwd(), 'uploads', 'avatars');
+
+export interface PuestoRanking {
+  id: string;
+  nickname: string;
+  avatarUrl: string | null;
+  levelTitle: string | null;
+  points: number;
+  tagsFound: number;
+  position: number;
+}
 
 @Injectable()
 export class UsersService {
@@ -96,6 +112,76 @@ export class UsersService {
     });
 
     return this.sanitizeUser(deletedUser);
+  }
+
+  // Perfil del usuario autenticado, con sus números de juego
+  async findMe(id: string) {
+    const user = await this.findOne(id);
+    const tagsFound = await this.prisma.scansHistory.count({ where: { userId: id } });
+    const { me } = await this.ranking(id);
+    return { ...user, tagsFound, position: me?.position ?? null };
+  }
+
+  // Ranking de jugadores (los ADMIN no compiten). Sin evento, por los puntos
+  // totales; con evento, por los puntos ganados en los tags de ese evento.
+  // Devuelve el top y, aparte, el puesto de quien pregunta aunque no esté en él.
+  async ranking(userId: string, eventId?: number, limit = 50) {
+    const filas = await this.prisma.$queryRaw<PuestoRanking[]>`
+      WITH puntos AS (
+        SELECT u.id, u.nickname, u.avatar_url AS "avatarUrl", u.level_title AS "levelTitle",
+               CASE WHEN ${eventId ?? null}::int IS NULL
+                    THEN u.total_points
+                    ELSE COALESCE(SUM(s.points_earned), 0)::int END AS points,
+               COUNT(s.id)::int AS "tagsFound",
+               u.created_at
+        FROM users u
+        -- Con evento, solo cuentan los escaneos de tags de ese evento
+        LEFT JOIN (
+          scans_history s
+          JOIN nfc_tags t ON t.id = s.tag_id
+            AND (${eventId ?? null}::int IS NULL OR t.event_id = ${eventId ?? null}::int)
+        ) ON s.user_id = u.id
+        WHERE u.role = 'USER'
+        GROUP BY u.id
+      ),
+      puestos AS (
+        SELECT *, RANK() OVER (ORDER BY points DESC)::int AS position
+        FROM puntos
+        -- En el ranking de un evento solo aparece quien ha jugado en él
+        WHERE ${eventId ?? null}::int IS NULL OR "tagsFound" > 0
+      )
+      SELECT id, nickname, "avatarUrl", "levelTitle", points, "tagsFound", position
+      FROM puestos
+      WHERE position <= ${limit} OR id = ${userId}::uuid
+      ORDER BY position, created_at
+    `;
+
+    return {
+      top: filas.filter((fila) => fila.position <= limit),
+      me: filas.find((fila) => fila.id === userId) ?? null,
+    };
+  }
+
+  // Guarda la foto (ya recortada y comprimida por la app) y reemplaza la anterior
+  async updateAvatar(id: string, archivo: Express.Multer.File) {
+    const user = await this.findOne(id);
+    await mkdir(CARPETA_AVATARES, { recursive: true });
+
+    // Nombre nuevo en cada subida: si fuera siempre el mismo, las apps
+    // seguirían mostrando la foto vieja desde su caché.
+    const extension = archivo.mimetype === 'image/png' ? 'png' : 'jpg';
+    const nombre = `${id}-${Date.now()}.${extension}`;
+    await writeFile(join(CARPETA_AVATARES, nombre), archivo.buffer);
+
+    if (user.avatarUrl?.startsWith('/uploads/avatars/')) {
+      await unlink(join(process.cwd(), user.avatarUrl)).catch(() => undefined);
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: { avatarUrl: `/uploads/avatars/${nombre}` },
+    });
+    return this.sanitizeUser(updated);
   }
 
   // Método auxiliar privado para limpiar el hash de la contraseña de las respuestas
